@@ -29,7 +29,7 @@ class Analysis {
             return array_merge($flat, [
                 "clicks" => $item['clicks'],
                 "impressions" => $item['impressions'],
-                "ctr" => number_format($item['ctr'], 2),
+                "ctr" => number_format($item['ctr'], 4),
                 "position" => number_format($item['position'], 2),
             ]);
         };
