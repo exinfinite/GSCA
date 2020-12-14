@@ -7,9 +7,7 @@ class Agent {
     public function __construct($credentials_path, $cache_path) {
         putenv("GOOGLE_APPLICATION_CREDENTIALS={$credentials_path}");
         $this->authClient();
-        $this->cache = new Cache($cache_path, [
-            'expire' => (new \DateTime(date('Y-m-d H:i:s')))->modify('+30 seconds'),
-        ]);
+        $this->cache = new Cache($cache_path);
     }
     private function authClient() {
         $client = new \Google\Client();
