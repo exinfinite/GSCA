@@ -1,11 +1,15 @@
 <?php
 namespace Exinfinite\GSCA;
+use Exinfinite\GSCA\Cache;
 
 class Agent {
     private $api = "https://www.googleapis.com/webmasters/v3/sites/%s/searchAnalytics/query";
-    public function __construct($credentials_path) {
+    public function __construct($credentials_path, $cache_path) {
         putenv("GOOGLE_APPLICATION_CREDENTIALS={$credentials_path}");
         $this->authClient();
+        $this->cache = new Cache($cache_path, [
+            'expire' => (new \DateTime(date('Y-m-d H:i:s')))->modify('+30 seconds'),
+        ]);
     }
     private function authClient() {
         $client = new \Google\Client();
@@ -28,7 +32,11 @@ class Agent {
      * Ref: https://developers.google.com/webmaster-tools/search-console-api-original/v3/searchanalytics/query
      */
     public function performance($site, $body = []) {
-        $response = $this->httpClient->post(sprintf($this->api, urlencode($site)), ['json' => $body]);
-        return $this->parseResult($response);
+        $key = sha1('perf' . serialize(func_get_args()));
+        return $this->cache
+            ->hit($key, function () use ($site, $body) {
+                $response = $this->httpClient->post(sprintf($this->api, urlencode($site)), ['json' => $body]);
+                return $this->parseResult($response);
+            });
     }
 }
