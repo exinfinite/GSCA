@@ -1,5 +1,11 @@
 # Google search console agent
 
+![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/exinfinite/gsca)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/exinfinite/GSCA)
+![Packagist Version](https://img.shields.io/packagist/v/exinfinite/gsca)
+![Packagist Downloads](https://img.shields.io/packagist/dt/exinfinite/gsca)
+![GitHub](https://img.shields.io/github/license/exinfinite/GSCA)
+
 ## 安裝
 
 ```php
