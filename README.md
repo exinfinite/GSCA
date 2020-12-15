@@ -23,7 +23,7 @@ $agent = new \Exinfinite\GSCA\Agent("path of credentials.json", "path of cache d
 ### 關鍵字成效分析
 
 ```php
-$analysis = new Analysis($agent, "site_url of google search console");
+$analysis = new Analysis($agent, "site_url");
 $first = new \DateTime('first day of this month');
 $last = new \DateTime('last day of this month');
 $result = $analysis->searchWords($first->format('Y-m-d'), $last->format('Y-m-d'));
@@ -32,7 +32,7 @@ $result = $analysis->searchWords($first->format('Y-m-d'), $last->format('Y-m-d')
 ### 原始資料
 
 ```php
-$result = $agent->performance("site_url of google search console", [
+$result = $agent->performance("site_url", [
     "startDate" => new \DateTime('first day of this month'),
     "endDate" => new \DateTime('last day of this month'),
     "dimensions" => ['query'],
