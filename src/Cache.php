@@ -8,7 +8,7 @@ class Cache {
         CacheManager::setDefaultConfig([
             "path" => $path,
         ]);
-        $this->expire = (new \DateTime(date('Y-m-d H:i:s')))->modify('+1 hours');
+        $this->expire = (new \DateTime(date('Y-m-d')))->modify('+1 day');
         $this->pool = CacheManager::getInstance('Sqlite');
     }
     private function getItem($identity) {
