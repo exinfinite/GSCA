@@ -9,11 +9,18 @@ class Analysis {
         $this->agent = $agent;
         $this->site_url = $site_url;
     }
-    public function searchWords($start, $end) {
+    /**
+     * 依關鍵字列出到達頁成效
+     *
+     * @param \DateTime $start
+     * @param \DateTime $end
+     * @return Json
+     */
+    public function searchWords(\DateTime $start, \DateTime $end) {
         $dimensions = [self::_DIMEN_QUERY, self::_DIMEN_PAGE];
         $rst = $this->agent->performance($this->site_url, [
-            "startDate" => $start,
-            "endDate" => $end,
+            "startDate" => $start->format('Y-m-d'),
+            "endDate" => $end->format('Y-m-d'),
             "dimensions" => $dimensions,
             "searchType" => "web",
             "aggregationType" => "auto",

@@ -26,7 +26,7 @@ $agent = new \Exinfinite\GSCA\Agent("path of credentials.json", "path of cache d
 $analysis = new Analysis($agent, "site_url");
 $first = new \DateTime('first day of this month');
 $last = new \DateTime('last day of this month');
-$result = $analysis->searchWords($first->format('Y-m-d'), $last->format('Y-m-d'));
+$result = $analysis->searchWords($first, $last);
 ```
 
 ### 原始資料
