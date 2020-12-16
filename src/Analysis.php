@@ -10,13 +10,9 @@ class Analysis {
         $this->site_url = $site_url;
     }
     /**
-     * 依關鍵字列出到達頁成效
-     *
-     * @param \DateTime $start
-     * @param \DateTime $end
-     * @return Json
+     * @return \Illuminate\Support\Collection
      */
-    public function searchWords(\DateTime $start, \DateTime $end) {
+    protected function baseData(\DateTime $start, \DateTime $end) {
         $dimensions = [self::_DIMEN_QUERY, self::_DIMEN_PAGE];
         $rst = $this->agent->performance($this->site_url, [
             "startDate" => $start->format('Y-m-d'),
@@ -41,10 +37,35 @@ class Analysis {
             ]);
         };
         return collect($rst['rows'])
-            ->map($flatmap)
+            ->map($flatmap);
+    }
+    /**
+     * 依關鍵字列出曝光頁成效
+     *
+     * @param \DateTime $start
+     * @param \DateTime $end
+     * @return Json
+     */
+    public function searchWords(\DateTime $start, \DateTime $end) {
+        return $this->baseData($start, $end)
             ->sortByDesc('clicks')
-            ->groupBy(function ($item, $key) {
+            ->groupBy(function ($item) {
                 return $item[self::_DIMEN_QUERY];
+            })
+            ->toJson();
+    }
+    /**
+     * 依曝光頁列出相關關鍵字
+     *
+     * @param \DateTime $start
+     * @param \DateTime $end
+     * @return Json
+     */
+    public function pages(\DateTime $start, \DateTime $end) {
+        return $this->baseData($start, $end)
+            ->sortByDesc('clicks')
+            ->groupBy(function ($item) {
+                return $item[self::_DIMEN_PAGE];
             })
             ->toJson();
     }

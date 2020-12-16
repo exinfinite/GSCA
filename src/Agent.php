@@ -30,9 +30,9 @@ class Agent {
      * Ref: https://developers.google.com/webmaster-tools/search-console-api-original/v3/searchanalytics/query
      */
     public function performance($site, $body = []) {
-        $key = sha1('perf' . serialize(func_get_args()));
+        $cache_key = sha1('perf' . serialize(func_get_args()));
         return $this->cache
-            ->hit($key, function () use ($site, $body) {
+            ->hit($cache_key, function () use ($site, $body) {
                 $response = $this->httpClient->post(sprintf($this->api, urlencode($site)), ['json' => $body]);
                 return $this->parseResult($response);
             });
