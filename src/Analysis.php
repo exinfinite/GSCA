@@ -5,6 +5,9 @@ class Analysis {
     const _DIMEN_QUERY = "query";
     const _DIMEN_PAGE = "page";
     const _DIMEN_DEVICE = "device";
+    const _DIMEN_COUNTRY = "country";
+    const _DIMEN_APPEARANCE = "searchAppearance";
+    const _DIMEN_DATE = "date";
     const _IMPRESSIONS = "impressions";
     const _CTR = "ctr";
     const _CLICKS = "clicks";
