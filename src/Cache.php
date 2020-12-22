@@ -11,6 +11,15 @@ class Cache {
         $this->expire = (new \DateTime(date('Y-m-d')))->modify('+1 day');
         $this->pool = CacheManager::getInstance('Sqlite');
     }
+    /**
+     * make cache key
+     *
+     * @param mixed $value can be serialized
+     * @return string
+     */
+    public function mapKey($value, $prefix = '') {
+        return $prefix . sha1(serialize($value));
+    }
     private function getItem($identity) {
         return $this->pool->getItem($identity);
     }

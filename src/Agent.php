@@ -9,6 +9,9 @@ class Agent {
         $this->authClient();
         $this->cache = new Cache($cache_path);
     }
+    public function getCache() {
+        return $this->cache;
+    }
     private function authClient() {
         $client = new \Google\Client();
         $client->useApplicationDefaultCredentials();
@@ -30,9 +33,9 @@ class Agent {
      * Ref: https://developers.google.com/webmaster-tools/search-console-api-original/v3/searchanalytics/query
      */
     public function performance($site, $body = []) {
-        $cache_key = sha1('perf' . serialize(func_get_args()));
-        return $this->cache
-            ->hit($cache_key, function () use ($site, $body) {
+        return $this->cache->hit(
+            $this->getCache()->mapKey(func_get_args(), 'perf_'),
+            function () use ($site, $body) {
                 $response = $this->httpClient->post(sprintf($this->api, urlencode($site)), ['json' => $body]);
                 return $this->parseResult($response);
             });

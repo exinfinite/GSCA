@@ -1,5 +1,6 @@
 <?php
 namespace Exinfinite\GSCA;
+use Exinfinite\GSCA\Cache;
 
 class Analysis {
     const _DIMEN_QUERY = "query";
@@ -14,6 +15,7 @@ class Analysis {
     public function __construct(\Exinfinite\GSCA\Agent $agent, $site_url) {
         $this->agent = $agent;
         $this->site_url = $site_url;
+        $this->cache = $agent->getCache();
     }
     protected function memoArray($var_name, $key, callable $data_source) {
         if (!is_string($var_name) || trim($var_name) == '' || !isset($key) || trim($key) == '') {
@@ -61,21 +63,6 @@ class Analysis {
         });
     }
     /**
-     * 最高數量的項目
-     *
-     * @param String $target
-     * @param \DateTime $start
-     * @param \DateTime $end
-     * @param Integer $take
-     * @return Json
-     */
-    public function highest($target, \DateTime $start, \DateTime $end, $take = 5) {
-        return $this->baseData($start, $end)
-            ->sortByDesc($target)
-            ->take((int) $take)
-            ->toJson();
-    }
-    /**
      * 依關鍵字列出曝光頁成效
      *
      * @param \DateTime $start
@@ -83,12 +70,15 @@ class Analysis {
      * @return Json
      */
     public function searchWords(\DateTime $start, \DateTime $end) {
-        return $this->baseData($start, $end)
-            ->sortByDesc('clicks')
-            ->groupBy(function ($item) {
-                return $item[self::_DIMEN_QUERY];
-            })
-            ->toJson();
+        return $this->cache->hit(
+            $this->cache->mapKey([$start->format('Y-m-d'), $end->format('Y-m-d')], 'words_'),
+            function () use ($start, $end) {
+                return $this->baseData($start, $end)
+                    ->groupBy(function ($item) {
+                        return $item[self::_DIMEN_QUERY];
+                    })
+                    ->toJson();
+            });
     }
     /**
      * 依曝光頁列出相關關鍵字
@@ -98,11 +88,14 @@ class Analysis {
      * @return Json
      */
     public function pages(\DateTime $start, \DateTime $end) {
-        return $this->baseData($start, $end)
-            ->sortByDesc('clicks')
-            ->groupBy(function ($item) {
-                return $item[self::_DIMEN_PAGE];
-            })
-            ->toJson();
+        return $this->cache->hit(
+            $this->cache->mapKey([$start->format('Y-m-d'), $end->format('Y-m-d')], 'pages_'),
+            function () use ($start, $end) {
+                return $this->baseData($start, $end)
+                    ->groupBy(function ($item) {
+                        return $item[self::_DIMEN_PAGE];
+                    })
+                    ->toJson();
+            });
     }
 }
