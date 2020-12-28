@@ -77,6 +77,17 @@ class Analysis {
                     ->groupBy(function ($item) {
                         return $item[self::_DIMEN_QUERY];
                     })
+                    ->sortByDesc(function ($items) {
+                        return $items->sum(self::_CLICKS);
+                    })
+                    ->map(function ($items) {
+                        return [
+                            'data' => $items,
+                            'meta' => [
+                                strtolower(self::_CLICKS) => $items->sum(self::_CLICKS),
+                            ],
+                        ];
+                    })
                     ->toJson();
             });
     }
@@ -94,6 +105,17 @@ class Analysis {
                 return $this->baseData($start, $end)
                     ->groupBy(function ($item) {
                         return $item[self::_DIMEN_PAGE];
+                    })
+                    ->sortByDesc(function ($items) {
+                        return $items->sum(self::_IMPRESSIONS);
+                    })
+                    ->map(function ($items) {
+                        return [
+                            'data' => $items,
+                            'meta' => [
+                                strtolower(self::_IMPRESSIONS) => $items->sum(self::_IMPRESSIONS),
+                            ],
+                        ];
                     })
                     ->toJson();
             });
