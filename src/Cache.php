@@ -18,7 +18,7 @@ class Cache {
      * @return string
      */
     public function mapKey($value, $prefix = '') {
-        return $prefix . sha1(serialize($value));
+        return $prefix . md5(serialize($value));
     }
     private function getItem($identity) {
         return $this->pool->getItem($identity);
