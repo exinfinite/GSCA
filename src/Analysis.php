@@ -1,6 +1,5 @@
 <?php
 namespace Exinfinite\GSCA;
-use Exinfinite\GSCA\Cache;
 
 class Analysis {
     const _DIMEN_QUERY = "query";
@@ -30,12 +29,19 @@ class Analysis {
     protected function memoIdendity($var_name, callable $data_source) {
         return $this->memoArray('_idendity_memo', $var_name, $data_source);
     }
+    //查詢欄位
+    protected function dftDimensions($none_kw_include = false) {
+        return $none_kw_include === true ? [self::_DIMEN_PAGE] : [self::_DIMEN_QUERY, self::_DIMEN_PAGE];
+    }
     /**
      * @return \Illuminate\Support\Collection
      */
-    protected function baseData(\DateTime $start, \DateTime $end) {
-        return $this->memoIdendity('_base_memo', function () use ($start, $end) {
-            $dimensions = [self::_DIMEN_QUERY, self::_DIMEN_PAGE];
+    protected function baseData(\DateTime $start, \DateTime $end, Array $dimensions = []) {
+        if (!(count($dimensions) > 0)) {
+            $dimensions = $this->dftDimensions();
+        }
+        sort($dimensions);
+        return $this->memoIdendity('_base_memo' . md5(serialize($dimensions)), function () use ($start, $end, $dimensions) {
             $rst = $this->agent->performance($this->site_url, [
                 "startDate" => $start->format('Y-m-d'),
                 "endDate" => $end->format('Y-m-d'),
@@ -63,6 +69,30 @@ class Analysis {
         });
     }
     /**
+     * 由自然搜尋而來的總點擊數
+     *
+     * @param \DateTime $start
+     * @param \DateTime $end
+     * @param Boolean $none_kw_include 是否包含無關鍵字流量
+     * @return Integer
+     */
+    public function totalClicks(\DateTime $start, \DateTime $end, $none_kw_include = false) {
+        $dimensions = $this->dftDimensions($none_kw_include);
+        return $this->baseData($start, $end, $dimensions)->sum(self::_CLICKS);
+    }
+    /**
+     * 由自然搜尋而來的總曝光數
+     *
+     * @param \DateTime $start
+     * @param \DateTime $end
+     * @param Boolean $none_kw_include 是否包含無關鍵字流量
+     * @return Integer
+     */
+    public function totalImpressions(\DateTime $start, \DateTime $end, $none_kw_include = false) {
+        $dimensions = $this->dftDimensions($none_kw_include);
+        return $this->baseData($start, $end, $dimensions)->sum(self::_IMPRESSIONS);
+    }
+    /**
      * 依關鍵字列出曝光頁成效
      *
      * @param \DateTime $start
@@ -71,7 +101,7 @@ class Analysis {
      */
     public function searchWords(\DateTime $start, \DateTime $end) {
         return $this->cache->hit(
-            $this->cache->mapKey([$start->format('Y-m-d'), $end->format('Y-m-d')], 'words_'),
+            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')], 'words_'),
             function () use ($start, $end) {
                 return $this->baseData($start, $end)
                     ->groupBy(function ($item) {
@@ -100,7 +130,7 @@ class Analysis {
      */
     public function pages(\DateTime $start, \DateTime $end) {
         return $this->cache->hit(
-            $this->cache->mapKey([$start->format('Y-m-d'), $end->format('Y-m-d')], 'pages_'),
+            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')], 'pages_'),
             function () use ($start, $end) {
                 return $this->baseData($start, $end)
                     ->groupBy(function ($item) {
@@ -117,6 +147,25 @@ class Analysis {
                             ],
                         ];
                     })
+                    ->toJson();
+            });
+    }
+    /**
+     * 最高曝光的頁面-關鍵字組
+     *
+     * @param \DateTime $start
+     * @param \DateTime $end
+     * @param Integer $take
+     * @return Json
+     */
+    public function hightImpressionPages(\DateTime $start, \DateTime $end, $take = 10) {
+        $take = abs((int) $take);
+        return $this->cache->hit(
+            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')], "high_impress_{$take}_"),
+            function () use ($start, $end, $take) {
+                return $this->baseData($start, $end)
+                    ->sortByDesc('impressions')
+                    ->take($take)
                     ->toJson();
             });
     }
