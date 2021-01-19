@@ -169,4 +169,23 @@ class Analysis {
                     ->toJson();
             });
     }
+    /**
+     * 最高點閱率的頁面-關鍵字組
+     *
+     * @param \DateTime $start
+     * @param \DateTime $end
+     * @param Integer $take
+     * @return Json
+     */
+    public function hightCtrPages(\DateTime $start, \DateTime $end, $take = 10) {
+        $take = abs((int) $take);
+        return $this->cache->hit(
+            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')], "high_ctr_{$take}_"),
+            function () use ($start, $end, $take) {
+                return $this->baseData($start, $end)
+                    ->sortByDesc('ctr')
+                    ->take($take)
+                    ->toJson();
+            });
+    }
 }
