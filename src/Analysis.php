@@ -11,10 +11,24 @@ class Analysis {
     const _IMPRESSIONS = "impressions";
     const _CTR = "ctr";
     const _CLICKS = "clicks";
+    private $high_ctr_base = 0.1; //高點閱率基準:10%
+    private $high_impress_base = 10; //高曝光率基準:10次
     public function __construct(\Exinfinite\GSCA\Agent $agent, $site_url) {
         $this->agent = $agent;
         $this->site_url = $site_url;
         $this->cache = $agent->getCache();
+    }
+    public function setCtrBase($num) {
+        $this->high_ctr_base = (float) $num;
+    }
+    public function setImpressBase($num) {
+        $this->high_impress_base = (float) $num;
+    }
+    public function getCtrBase() {
+        return $this->high_ctr_base;
+    }
+    public function getImpressBase() {
+        return $this->high_impress_base;
     }
     protected function memoArray($var_name, $key, callable $data_source) {
         if (!is_string($var_name) || trim($var_name) == '' || !isset($key) || trim($key) == '') {
@@ -180,10 +194,13 @@ class Analysis {
     public function hightCtrPages(\DateTime $start, \DateTime $end, $take = 10) {
         $take = abs((int) $take);
         return $this->cache->hit(
-            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')], "high_ctr_{$take}_"),
+            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d'), $this->high_ctr_base, $this->high_impress_base], "high_ctr_{$take}_"),
             function () use ($start, $end, $take) {
                 return $this->baseData($start, $end)
-                    ->sortByDesc('ctr')
+                    ->filter(function ($item) {
+                        return $item[self::_CTR] >= $this->high_ctr_base && $item[self::_IMPRESSIONS] >= $this->high_impress_base;
+                    })
+                    ->sortByDesc(self::_CTR)
                     ->take($take)
                     ->toJson();
             });
