@@ -18,25 +18,32 @@ composer require exinfinite/gsca
 
 ```php
 $agent = new \Exinfinite\GSCA\Agent("path of credentials.json", "path of cache dir");
-```
-
-### 關鍵字成效分析
-
-```php
 $analysis = new Analysis($agent, "site_url");
-$first = new \DateTime('first day of this month');
-$last = new \DateTime('last day of this month');
-$result = $analysis->searchWords($first, $last);
+$start_date = new \DateTime('first day of this month');
+$end_date = new \DateTime('last day of this month');
 ```
 
-### 原始資料
+### get original data
 
 ```php
-$result = $agent->performance("site_url", [
-    "startDate" => new \DateTime('first day of this month'),
-    "endDate" => new \DateTime('last day of this month'),
-    "dimensions" => ['query'],
-    "searchType" => "web",
-    "aggregationType" => "auto"
-]);
+$analysis->baseData($start_date, $end_date);
+```
+
+### 成效分析
+
+```php
+//group by keyword
+$analysis->searchWords($start_date, $end_date);
+
+//group by page
+$analysis->pages($start_date, $end_date);
+
+//最高曝光的頁面-關鍵字組
+$analysis->highImpressionPages($start_date, $end_date, $take = 10);
+
+//(高曝光-高點閱率)的頁面-關鍵字組
+$analysis->highCtrPages($start_date, $end_date, $take = 10);
+
+//(高曝光-低點閱率)的頁面-關鍵字組
+$analysis->lowCtrPages($start_date, $end_date, $take = 10);
 ```

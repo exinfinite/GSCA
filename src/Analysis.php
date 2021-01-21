@@ -192,7 +192,7 @@ class Analysis {
      * @param Integer $take
      * @return Json
      */
-    public function hightImpressionPages(\DateTime $start, \DateTime $end, $take = 10) {
+    public function highImpressionPages(\DateTime $start, \DateTime $end, $take = 10) {
         $take = abs((int) $take);
         $cache_key_factors = [$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')];
         $cache_prefix = "high_impress_{$take}_";
@@ -211,7 +211,7 @@ class Analysis {
      * @param Integer $take
      * @return Json
      */
-    public function hightCtrPages(\DateTime $start, \DateTime $end, $take = 10) {
+    public function highCtrPages(\DateTime $start, \DateTime $end, $take = 10) {
         $take = abs((int) $take);
         $cache_key_factors = [$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d'), $this->high_ctr_base, $this->high_impress_base];
         $cache_prefix = "high_impress_ctr_{$take}_";
