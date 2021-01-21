@@ -13,22 +13,33 @@ class Analysis {
     const _CLICKS = "clicks";
     private $high_ctr_base = 0.1; //高點閱率基準:10%
     private $high_impress_base = 10; //高曝光率基準:10次
+    private $low_ctr_base = 0.03; //低點閱率基準:3%
+    private $cached = true;
     public function __construct(\Exinfinite\GSCA\Agent $agent, $site_url) {
         $this->agent = $agent;
         $this->site_url = $site_url;
         $this->cache = $agent->getCache();
     }
+    public function setCache($bool = true) {
+        $this->cached = (bool) $bool;
+    }
     public function setCtrBase($num) {
         $this->high_ctr_base = (float) $num;
     }
     public function setImpressBase($num) {
-        $this->high_impress_base = (float) $num;
+        $this->high_impress_base = (int) $num;
     }
     public function getCtrBase() {
         return $this->high_ctr_base;
     }
     public function getImpressBase() {
         return $this->high_impress_base;
+    }
+    public function setLowCtrBase($num) {
+        $this->low_ctr_base = (float) $num;
+    }
+    public function getLowCtrBase() {
+        return $this->low_ctr_base;
     }
     protected function memoArray($var_name, $key, callable $data_source) {
         if (!is_string($var_name) || trim($var_name) == '' || !isset($key) || trim($key) == '') {
@@ -50,7 +61,7 @@ class Analysis {
     /**
      * @return \Illuminate\Support\Collection
      */
-    protected function baseData(\DateTime $start, \DateTime $end, Array $dimensions = []) {
+    public function baseData(\DateTime $start, \DateTime $end, Array $dimensions = []) {
         if (!(count($dimensions) > 0)) {
             $dimensions = $this->dftDimensions();
         }
@@ -81,6 +92,15 @@ class Analysis {
             return collect($rst['rows'])
                 ->map($flatmap);
         });
+    }
+    private function useCache(callable $func, $key, $prefix = '') {
+        if ($this->cached !== true) {
+            return call_user_func($func);
+        }
+        return $this->cache->hit(
+            $this->cache->mapKey($key, $prefix),
+            $func
+        );
     }
     /**
      * 由自然搜尋而來的總點擊數
@@ -114,26 +134,26 @@ class Analysis {
      * @return Json
      */
     public function searchWords(\DateTime $start, \DateTime $end) {
-        return $this->cache->hit(
-            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')], 'words_'),
-            function () use ($start, $end) {
-                return $this->baseData($start, $end)
-                    ->groupBy(function ($item) {
-                        return $item[self::_DIMEN_QUERY];
-                    })
-                    ->sortByDesc(function ($items) {
-                        return $items->sum(self::_CLICKS);
-                    })
-                    ->map(function ($items) {
-                        return [
-                            'data' => $items,
-                            'meta' => [
-                                strtolower(self::_CLICKS) => $items->sum(self::_CLICKS),
-                            ],
-                        ];
-                    })
-                    ->toJson();
-            });
+        $cache_key_factors = [$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')];
+        $cache_prefix = "words_";
+        return $this->useCache(function () use ($start, $end) {
+            return $this->baseData($start, $end)
+                ->groupBy(function ($item) {
+                    return $item[self::_DIMEN_QUERY];
+                })
+                ->sortByDesc(function ($items) {
+                    return $items->sum(self::_CLICKS);
+                })
+                ->map(function ($items) {
+                    return [
+                        'data' => $items,
+                        'meta' => [
+                            strtolower(self::_CLICKS) => $items->sum(self::_CLICKS),
+                        ],
+                    ];
+                })
+                ->toJson();
+        }, $cache_key_factors, $cache_prefix);
     }
     /**
      * 依曝光頁列出相關關鍵字
@@ -143,26 +163,26 @@ class Analysis {
      * @return Json
      */
     public function pages(\DateTime $start, \DateTime $end) {
-        return $this->cache->hit(
-            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')], 'pages_'),
-            function () use ($start, $end) {
-                return $this->baseData($start, $end)
-                    ->groupBy(function ($item) {
-                        return $item[self::_DIMEN_PAGE];
-                    })
-                    ->sortByDesc(function ($items) {
-                        return $items->sum(self::_IMPRESSIONS);
-                    })
-                    ->map(function ($items) {
-                        return [
-                            'data' => $items,
-                            'meta' => [
-                                strtolower(self::_IMPRESSIONS) => $items->sum(self::_IMPRESSIONS),
-                            ],
-                        ];
-                    })
-                    ->toJson();
-            });
+        $cache_key_factors = [$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')];
+        $cache_prefix = "pages_";
+        return $this->useCache(function () use ($start, $end) {
+            return $this->baseData($start, $end)
+                ->groupBy(function ($item) {
+                    return $item[self::_DIMEN_PAGE];
+                })
+                ->sortByDesc(function ($items) {
+                    return $items->sum(self::_IMPRESSIONS);
+                })
+                ->map(function ($items) {
+                    return [
+                        'data' => $items,
+                        'meta' => [
+                            strtolower(self::_IMPRESSIONS) => $items->sum(self::_IMPRESSIONS),
+                        ],
+                    ];
+                })
+                ->toJson();
+        }, $cache_key_factors, $cache_prefix);
     }
     /**
      * 最高曝光的頁面-關鍵字組
@@ -174,17 +194,17 @@ class Analysis {
      */
     public function hightImpressionPages(\DateTime $start, \DateTime $end, $take = 10) {
         $take = abs((int) $take);
-        return $this->cache->hit(
-            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')], "high_impress_{$take}_"),
-            function () use ($start, $end, $take) {
-                return $this->baseData($start, $end)
-                    ->sortByDesc('impressions')
-                    ->take($take)
-                    ->toJson();
-            });
+        $cache_key_factors = [$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d')];
+        $cache_prefix = "high_impress_{$take}_";
+        return $this->useCache(function () use ($start, $end, $take) {
+            return $this->baseData($start, $end)
+                ->sortByDesc(self::_IMPRESSIONS)
+                ->take($take)
+                ->toJson();
+        }, $cache_key_factors, $cache_prefix);
     }
     /**
-     * 最高點閱率的頁面-關鍵字組
+     * (高曝光-高點閱率)的頁面-關鍵字組
      *
      * @param \DateTime $start
      * @param \DateTime $end
@@ -193,16 +213,38 @@ class Analysis {
      */
     public function hightCtrPages(\DateTime $start, \DateTime $end, $take = 10) {
         $take = abs((int) $take);
-        return $this->cache->hit(
-            $this->cache->mapKey([$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d'), $this->high_ctr_base, $this->high_impress_base], "high_ctr_{$take}_"),
-            function () use ($start, $end, $take) {
-                return $this->baseData($start, $end)
-                    ->filter(function ($item) {
-                        return $item[self::_CTR] >= $this->high_ctr_base && $item[self::_IMPRESSIONS] >= $this->high_impress_base;
-                    })
-                    ->sortByDesc(self::_CTR)
-                    ->take($take)
-                    ->toJson();
-            });
+        $cache_key_factors = [$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d'), $this->high_ctr_base, $this->high_impress_base];
+        $cache_prefix = "high_impress_ctr_{$take}_";
+        return $this->useCache(function () use ($start, $end, $take) {
+            return $this->baseData($start, $end)
+                ->filter(function ($item) {
+                    return $item[self::_CTR] >= $this->high_ctr_base && $item[self::_IMPRESSIONS] >= $this->high_impress_base;
+                })
+                ->sortByDesc(self::_CTR)
+                ->take($take)
+                ->toJson();
+        }, $cache_key_factors, $cache_prefix);
+    }
+    /**
+     * (高曝光-低點閱率)的頁面-關鍵字組
+     *
+     * @param \DateTime $start
+     * @param \DateTime $end
+     * @param Integer $take
+     * @return Json
+     */
+    public function lowCtrPages(\DateTime $start, \DateTime $end, $take = 10) {
+        $take = abs((int) $take);
+        $cache_key_factors = [$this->site_url, $start->format('Y-m-d'), $end->format('Y-m-d'), $this->low_ctr_base, $this->high_impress_base];
+        $cache_prefix = "high_impress_low_ctr_{$take}_";
+        return $this->useCache(function () use ($start, $end, $take) {
+            return $this->baseData($start, $end)
+                ->filter(function ($item) {
+                    return $item[self::_CTR] < $this->low_ctr_base && $item[self::_IMPRESSIONS] >= $this->high_impress_base;
+                })
+                ->sortByDesc(self::_IMPRESSIONS)
+                ->take($take)
+                ->toJson();
+        }, $cache_key_factors, $cache_prefix);
     }
 }
