@@ -19,6 +19,7 @@ composer require exinfinite/gsca
 ```php
 //需先至google cloud platform申請服務帳戶,並將其加入google search console的資源中
 $agent = new \Exinfinite\GSCA\Agent("path of credentials.json", "path of cache dir");
+//若為網域資源,則使用sc-domain:site_url
 $analysis = new Analysis($agent, "site_url");
 $start_date = new \DateTime('first day of this month');
 $end_date = new \DateTime('last day of this month');
